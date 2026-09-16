@@ -1,4 +1,5 @@
 import pygame
+import random
 
 pygame.init()
 window_width = 1280
@@ -16,11 +17,11 @@ map = pygame.transform.scale(map, (window_width, window_height))
 cell_width = window_width / grid_size
 cell_height = window_height / grid_size
 
-player_x = 2
-player_y = 2
+player_x = grid_size//2
+player_y = grid_size//2
 
-lucky_x = 0
-lucky_y = 0
+lucky_x = random.randint(0, grid_size-1)
+lucky_y = random.randint(0, grid_size-1)
 
 #player_pos = pygame.Vector2(screen.get_width()/2, screen.get_height()/2)
 player_grid_pos = [player_x, player_y]
@@ -54,8 +55,8 @@ while running:
                 lucky_grid_pos[1] = 0  
     
     screen.fill("white")
-    screen.blit(map, (0,0))
-    pygame.display.update()
+    #screen.blit(map, (0,0))
+    #pygame.display.update()
 
     for i in range(grid_size + 1):
         x = int(i * cell_width)
