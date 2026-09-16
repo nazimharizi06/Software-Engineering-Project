@@ -16,8 +16,15 @@ map = pygame.transform.scale(map, (window_width, window_height))
 cell_width = window_width / grid_size
 cell_height = window_height / grid_size
 
+player_x = 2
+player_y = 2
+
+lucky_x = 0
+lucky_y = 0
+
 #player_pos = pygame.Vector2(screen.get_width()/2, screen.get_height()/2)
-player_grid_pos = [2,2]
+player_grid_pos = [player_x, player_y]
+lucky_grid_pos = [lucky_x, lucky_y] 
 
 while running:
     for event in pygame.event.get():
@@ -34,8 +41,17 @@ while running:
         column = max(0, min(column, grid_size - 1))
         row = max(0, min(row, grid_size - 1))
     
-        player_grid_pos = [column, row]
-    
+        if [column, row] != player_grid_pos:
+            player_grid_pos = [column, row]
+        
+            lucky_grid_pos[0] += 1
+        
+            if lucky_grid_pos[0] >= grid_size:
+                lucky_grid_pos[0] = 0
+                lucky_grid_pos[1] += 1
+        
+            if lucky_grid_pos[1] >= grid_size:
+                lucky_grid_pos[1] = 0  
     
     screen.fill("white")
     screen.blit(map, (0,0))
@@ -51,11 +67,15 @@ while running:
     player_x = (player_grid_pos[0] + 0.5) * cell_width
     player_y = (player_grid_pos[1] + 0.5) * cell_height
 
+    lucky_x = (lucky_grid_pos[0] + 0.5) * cell_width
+    lucky_y = (lucky_grid_pos[1] + 0.5) * cell_height
+
     #if keys[pygame.K_SPACE]:
     #    screen.fill("green")
 
     #pygame.draw.circle(screen, "black", player_pos, 10)
     pygame.draw.circle(screen, "blue", (int(player_x), int(player_y)), 16)
+    pygame.draw.circle(screen, "green", (int(lucky_x), int(lucky_y)), 16)
 
     #if keys[pygame.K_w]:
     #    player_pos.y -= 300*dt
