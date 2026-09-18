@@ -1,21 +1,52 @@
 import pygame
 import random
+import time
 
 pygame.init()
 window_width = 1280
 window_height = 720
-grid_size = 5
+grid_size = 3
 
 screen = pygame.display.set_mode((window_width, window_height))
+
 clock = pygame.time.Clock()
 running = True
 dt = 0
 
-map = pygame.image.load('poly_map.png')
+map = pygame.image.load('tiles/poly_map.png')
 map = pygame.transform.scale(map, (window_width, window_height))
 
 cell_width = window_width / grid_size
 cell_height = window_height / grid_size
+
+road = pygame.image.load('tiles/road.jpg')
+road = pygame.transform.scale(road, (cell_width, cell_height))
+grass = pygame.image.load('tiles/grass.jpg')
+grass = pygame.transform.scale(grass, (cell_width, cell_height))
+building = pygame.image.load('tiles/building.jpg')
+building = pygame.transform.scale(building, (cell_width, cell_height))
+
+tile_dictionary = {
+    0: grass,
+    1: road,
+    2: building
+}
+
+tile_map = [
+    [0, 0, 2],
+    [1, 1, 1],
+    [0, 0, 0],
+]
+
+def draw_background():
+    for row_index, row in enumerate(tile_map):
+        for col_index, tile_type in enumerate(row):
+            tile_image = tile_dictionary[tile_type]
+            
+            x_coord = col_index * cell_width
+            y_coord = row_index * cell_height
+            
+            screen.blit(tile_image, (x_coord, y_coord))
 
 player_x = grid_size//2
 player_y = grid_size//2
@@ -23,9 +54,10 @@ player_y = grid_size//2
 lucky_x = random.randint(0, grid_size-1)
 lucky_y = random.randint(0, grid_size-1)
 
-#player_pos = pygame.Vector2(screen.get_width()/2, screen.get_height()/2)
 player_grid_pos = [player_x, player_y]
 lucky_grid_pos = [lucky_x, lucky_y] 
+
+player_in_building = False
 
 while running:
     for event in pygame.event.get():
@@ -53,8 +85,15 @@ while running:
         
             if lucky_grid_pos[1] >= grid_size:
                 lucky_grid_pos[1] = 0  
+                
+            if tile_map[player_grid_pos[1]][player_grid_pos[0]] == 2:
+                player_in_building = True
+                print("Entered Buidling")
+            else:
+                player_in_building = False        
     
     screen.fill("white")
+    draw_background()
     #screen.blit(map, (0,0))
     #pygame.display.update()
 
@@ -71,22 +110,18 @@ while running:
     lucky_x = (lucky_grid_pos[0] + 0.5) * cell_width
     lucky_y = (lucky_grid_pos[1] + 0.5) * cell_height
 
-    #if keys[pygame.K_SPACE]:
-    #    screen.fill("green")
-
-    #pygame.draw.circle(screen, "black", player_pos, 10)
     pygame.draw.circle(screen, "blue", (int(player_x), int(player_y)), 16)
     pygame.draw.circle(screen, "green", (int(lucky_x), int(lucky_y)), 16)
 
-    #if keys[pygame.K_w]:
-    #    player_pos.y -= 300*dt
-    #if keys[pygame.K_s]:
-    #    player_pos.y += 300*dt
-    #if keys[pygame.K_d]:
-    #    player_pos.x += 300*dt
-    #if keys[pygame.K_a]:
-    #    player_pos.x -= 300*dt
+    if player_in_building:
+        screen.fill("black")
+    #else:
+    #    draw_background()
+        
 
+    if keys[pygame.K_ESCAPE]:
+        pygame.quit()
+        
     pygame.display.flip()
 
     dt = clock.tick(60)/1000
