@@ -1,6 +1,5 @@
 import pygame
 import random
-import time
 
 pygame.init()
 window_width = 1280
@@ -25,11 +24,14 @@ grass = pygame.image.load('tiles/grass.jpg')
 grass = pygame.transform.scale(grass, (cell_width, cell_height))
 building = pygame.image.load('tiles/building.jpg')
 building = pygame.transform.scale(building, (cell_width, cell_height))
+wood_floor = pygame.image.load('tiles/wood_floor.jpg')
+wood_floor = pygame.transform.scale(wood_floor, (cell_width, cell_height))
 
 tile_dictionary = {
     0: grass,
     1: road,
-    2: building
+    2: building,
+    3: wood_floor
 }
 
 tile_map = [
@@ -38,8 +40,14 @@ tile_map = [
     [0, 0, 0],
 ]
 
-def draw_background():
-    for row_index, row in enumerate(tile_map):
+interior_map = [
+    [3, 3, 3],
+    [3, 3, 3],
+    [3, 3, 3]
+]
+
+def draw_background(map):
+    for row_index, row in enumerate(map):
         for col_index, tile_type in enumerate(row):
             tile_image = tile_dictionary[tile_type]
             
@@ -93,7 +101,13 @@ while running:
                 player_in_building = False        
     
     screen.fill("white")
-    draw_background()
+    
+    if player_in_building:
+        draw_background(interior_map)
+    else:
+        draw_background(tile_map)
+    
+    #draw_background(tile_map)
     #screen.blit(map, (0,0))
     #pygame.display.update()
 
@@ -112,12 +126,6 @@ while running:
 
     pygame.draw.circle(screen, "blue", (int(player_x), int(player_y)), 16)
     pygame.draw.circle(screen, "green", (int(lucky_x), int(lucky_y)), 16)
-
-    if player_in_building:
-        screen.fill("black")
-    #else:
-    #    draw_background()
-        
 
     if keys[pygame.K_ESCAPE]:
         pygame.quit()
