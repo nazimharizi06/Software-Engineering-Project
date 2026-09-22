@@ -12,8 +12,8 @@ clock = pygame.time.Clock()
 running = True
 dt = 0
 
-map = pygame.image.load('tiles/poly_map.png')
-map = pygame.transform.scale(map, (window_width, window_height))
+#map = pygame.image.load('tiles/poly_map.png')
+#map = pygame.transform.scale(map, (window_width, window_height))
 
 cell_width = window_width / grid_size
 cell_height = window_height / grid_size
@@ -38,6 +38,15 @@ tile_map = [
     [0, 0, 2],
     [1, 1, 1],
     [0, 0, 0],
+]
+
+temp_map = [
+    [0, 2, 0, 2, 0, 0],
+    [1, 1, 1, 1, 1, 0],
+    [2, 2, 0, 0, 2, 0],
+    [1, 1, 1, 1, 1, 1],
+    [0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 2, 0, 0],
 ]
 
 interior_map = [
@@ -123,9 +132,16 @@ while running:
 
     lucky_x = (lucky_grid_pos[0] + 0.5) * cell_width
     lucky_y = (lucky_grid_pos[1] + 0.5) * cell_height
-
+    
     pygame.draw.circle(screen, "blue", (int(player_x), int(player_y)), 16)
-    pygame.draw.circle(screen, "green", (int(lucky_x), int(lucky_y)), 16)
+    pygame.draw.circle(screen, "green", (int(lucky_x), int(lucky_y)), 16)    
+    
+    font = pygame.font.SysFont(None, 75)
+    encounter_text = font.render("Encountered Dr. Lucky", True, (0, 0, 0))
+    
+    if player_grid_pos[0] == lucky_grid_pos[0] and player_grid_pos[1] == lucky_grid_pos[1]:
+        screen.blit(encounter_text, (360, 360))
+        pygame.draw.circle(screen, "red", (int(player_x), int(player_y)), 16)
 
     if keys[pygame.K_ESCAPE]:
         pygame.quit()
