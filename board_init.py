@@ -111,6 +111,7 @@ while running:
     
     screen.fill("white")
     
+    #player_in_building = False
     if player_in_building:
         draw_background(interior_map)
     else:
