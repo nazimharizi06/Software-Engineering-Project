@@ -2,7 +2,7 @@
 encounter.py
 Campus Capers - Professor/TA Encounter Mechanic
 
-This module handles ONLY encounter logic.
+This module handles encounter logic.
 
 This module determines whether an encounter can happen and resolves
 persuasion or theft attempts.
@@ -79,11 +79,6 @@ class EncounterResult:
 class EncounterResolver:
     """
     Resolves Professor/TA encounters.
-
-    Movement is NOT handled here.
-
-    The player and target locations are supplied by the map/movement
-    systems developed elsewhere in the group project.
     """
 
     def __init__(self, rng: random.Random | None = None):
