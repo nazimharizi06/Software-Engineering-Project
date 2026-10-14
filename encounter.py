@@ -1,59 +1,31 @@
-"""
-encounter.py
-Campus Capers - Professor/TA Encounter Mechanic
-
-This module handles encounter logic.
-
-This module determines whether an encounter can happen and resolves
-persuasion or theft attempts.
-"""
-
-from __future__ import annotations
-
-import random
+"""Engine-independent Professor/TA encounter rules for Campus Capers."""
 from dataclasses import dataclass
-from enum import Enum, auto
+from enum import Enum
+import random
 
-
-# ---------------------------------------------------------
-# Encounter Types
-# ---------------------------------------------------------
 
 class EncounterAction(Enum):
-    PERSUASION = "persuasion"
-    THEFT = "theft"
+    PERSUASION = 'persuasion'
+    THEFT = 'theft'
 
 
 class EncounterStatus(Enum):
-    IDLE = auto()
-    READY = auto()
-    RESOLVED = auto()
+    IDLE = 'idle'
+    READY = 'ready'
+    RESOLVED = 'resolved'
 
 
 class Refusal(Enum):
-    NOT_CO_LOCATED = "Player and Professor/TA must be in the same location."
-    ALREADY_ATTEMPTED = "Player has already attempted an encounter this turn."
+    NOT_CO_LOCATED = 'Player and Professor/TA are in different locations.'
+    ALREADY_ATTEMPTED = 'Player has already attempted an encounter this turn.'
 
-
-# ---------------------------------------------------------
-# Data passed in from the rest of the game
-# ---------------------------------------------------------
 
 @dataclass(frozen=True)
 class EncounterContext:
-    """
-    Snapshot of information needed to determine whether an encounter
-    can occur.
-
-    Movement/map code is responsible for providing the locations.
-    """
-
     player_name: str
     player_location: str
-
     target_name: str
     target_location: str
-
     attempts_used_this_turn: int = 0
     attempts_per_turn: int = 1
 
@@ -62,191 +34,72 @@ class EncounterContext:
 class EncounterResult:
     action: EncounterAction
     success: bool
-
     base_chance: int
     card_bonus: int
     final_chance: int
     roll: int
-
     answers_received: bool
     message: str
 
 
-# ---------------------------------------------------------
-# Encounter Rules
-# ---------------------------------------------------------
-
 class EncounterResolver:
-    """
-    Resolves Professor/TA encounters.
-    """
+    def __init__(self, rng=None):
+        self.rng = rng if rng is not None else random.Random()
 
-    def __init__(self, rng: random.Random | None = None):
-        self.rng = rng or random.Random()
-
-    def check(self, ctx: EncounterContext) -> Refusal | None:
-        """
-        Check whether the player is allowed to start an encounter.
-        """
-
+    def check(self, ctx):
         if ctx.player_location != ctx.target_location:
             return Refusal.NOT_CO_LOCATED
-
         if ctx.attempts_used_this_turn >= ctx.attempts_per_turn:
             return Refusal.ALREADY_ATTEMPTED
-
         return None
 
-    def resolve(
-        self,
-        ctx: EncounterContext,
-        action: EncounterAction,
-        card_bonus: int = 0,
-    ) -> EncounterResult:
-        """
-        Resolve either a persuasion or theft attempt.
-
-        card_bonus is supplied by the card system.
-        This module does not manage the player's hand.
-        """
-
+    def resolve(self, ctx, action, card_bonus=0):
         refusal = self.check(ctx)
-
         if refusal is not None:
             raise ValueError(refusal.value)
-
-        # Initial balancing values.
-        # These can be adjusted later by the team.
-        if action is EncounterAction.PERSUASION:
-            base_chance = 50
-
-        elif action is EncounterAction.THEFT:
-            base_chance = 40
-
-        else:
-            raise ValueError("Invalid encounter action.")
-
-        # Cards can improve the player's chance.
-        final_chance = base_chance + card_bonus
-
-        # Keep probability between 0% and 100%.
-        final_chance = max(0, min(100, final_chance))
-
+        if not isinstance(action, EncounterAction):
+            raise ValueError('Choose persuasion or theft.')
+        base = 50 if action is EncounterAction.PERSUASION else 40
+        chance = max(0, min(100, base + int(card_bonus)))
         roll = self.rng.randint(1, 100)
-
-        success = roll <= final_chance
-
-        if success:
-            message = (
-                f"{ctx.player_name} successfully used "
-                f"{action.value} against {ctx.target_name} "
-                "and obtained exam answers."
-            )
-        else:
-            message = (
-                f"{ctx.player_name}'s {action.value} attempt "
-                f"against {ctx.target_name} failed."
-            )
-
+        success = roll <= chance
         return EncounterResult(
-            action=action,
-            success=success,
-            base_chance=base_chance,
-            card_bonus=card_bonus,
-            final_chance=final_chance,
-            roll=roll,
-            answers_received=success,
-            message=message,
+            action, success, base, int(card_bonus), chance, roll, success,
+            f"{ctx.player_name} {'obtained' if success else 'did not obtain'} exam answers "
+            f"from {ctx.target_name} using {action.value} (roll {roll}, needed <= {chance})."
         )
 
-
-# ---------------------------------------------------------
-# Encounter Session
-# ---------------------------------------------------------
 
 class EncounterSession:
-    """
-    Tracks the state of one encounter.
-
-    The game can create/use this object when the player interacts
-    with a Professor/TA.
-    """
-
-    def __init__(self, resolver: EncounterResolver):
-        self.resolver = resolver
-        self.status = EncounterStatus.IDLE
-        self.context: EncounterContext | None = None
-        self.last_result: EncounterResult | None = None
-
-    def start(self, ctx: EncounterContext) -> Refusal | None:
-        """
-        Attempt to start an encounter.
-        """
-
-        refusal = self.resolver.check(ctx)
-
-        if refusal is not None:
-            return refusal
-
-        self.context = ctx
-        self.status = EncounterStatus.READY
-        return None
-
-    def attempt(
-        self,
-        action: EncounterAction,
-        card_bonus: int = 0,
-    ) -> EncounterResult | None:
-        """
-        Perform persuasion or theft.
-        """
-
-        if self.status is not EncounterStatus.READY:
-            return None
-
-        if self.context is None:
-            return None
-
-        result = self.resolver.resolve(
-            self.context,
-            action,
-            card_bonus,
-        )
-
-        self.last_result = result
-        self.status = EncounterStatus.RESOLVED
-
-        return result
-
-    def close(self) -> None:
-        """
-        Close the encounter so control can return to the main game.
-        """
-
+    def __init__(self, resolver=None):
+        self.resolver = resolver if resolver is not None else EncounterResolver()
         self.status = EncounterStatus.IDLE
         self.context = None
+        self.result = None
+
+    def start(self, ctx):
+        if self.status is not EncounterStatus.IDLE:
+            raise RuntimeError('Close the previous encounter first.')
+        refusal = self.resolver.check(ctx)
+        if refusal is None:
+            self.context = ctx
+            self.status = EncounterStatus.READY
+        return refusal
+
+    def attempt(self, action, card_bonus=0):
+        if self.status is not EncounterStatus.READY:
+            raise RuntimeError('Start a valid encounter first.')
+        self.result = self.resolver.resolve(self.context, action, card_bonus)
+        self.status = EncounterStatus.RESOLVED
+        return self.result
+
+    def close(self):
+        self.context = None
+        self.result = None
+        self.status = EncounterStatus.IDLE
 
 
-# ---------------------------------------------------------
-# Helper for group-project integration
-# ---------------------------------------------------------
-
-def build_context(
-    player_name: str,
-    player_location: str,
-    target_name: str,
-    target_location: str,
-    attempts_used: int = 0,
-) -> EncounterContext:
-    """
-    Creates the encounter context using information supplied by
-    the group's player/movement systems.
-    """
-
-    return EncounterContext(
-        player_name=player_name,
-        player_location=player_location,
-        target_name=target_name,
-        target_location=target_location,
-        attempts_used_this_turn=attempts_used,
-    )
+def build_context(player_name, player_location, target_name, target_location,
+                  attempts_used=0, attempts_per_turn=1):
+    return EncounterContext(player_name, player_location, target_name,
+                            target_location, attempts_used, attempts_per_turn)
