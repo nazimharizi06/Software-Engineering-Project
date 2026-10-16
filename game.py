@@ -30,6 +30,8 @@ class Game:
         }
 
         self.selected = False
+        self.selected_tile = None
+        self.inspected_tile = None
 
     @property
     def current_view(self):
@@ -42,24 +44,62 @@ class Game:
 
         if view.character_hit(self.world, player, position):
             self.selected = not self.selected
-            return
-
-        if not self.selected:
+            self.inspected_tile = None
             return
 
         target_id = view.tile_at(position)
 
         if target_id is None:
             self.selected = False
+            self.inspected_tile = None
             return
 
-        moved = self.world.move_player(
-            self.world.active_player_index,
-            target_id,
-        )
+        if self.selected:
+            legal_moves = self.world.legal_moves(player)
 
-        if moved:
-            self.selected = False
+            if target_id in legal_moves:
+                moved = self.world.move_player(
+                    self.world.active_player_index,
+                    target_id,
+                )
+
+                if moved:
+                    self.selected = False
+                    self.inspected_tile = None
+
+                return
+
+        self.selected = False
+
+        if self.inspected_tile == target_id:
+            self.inspected_tile = None
+        else:
+            self.inspected_tile = target_id
+
+    # def handle_click(self, position):
+    #     player = self.world.active_player
+    #     view = self.current_view
+
+    #     if view.character_hit(self.world, player, position):
+    #         self.selected = not self.selected
+    #         return
+
+    #     if not self.selected:
+    #         return
+
+    #     target_id = view.tile_at(position)
+
+    #     if target_id is None:
+    #         self.selected = False
+    #         return
+
+    #     moved = self.world.move_player(
+    #         self.world.active_player_index,
+    #         target_id,
+    #     )
+
+    #     if moved:
+    #         self.selected = False
 
     def run(self):
         running = True
@@ -82,10 +122,21 @@ class Game:
                     self.world.active_player
                 )
 
+            visible_tiles = set()
+
+            if self.inspected_tile is not None:
+                visible_tiles = (
+                    self.current_view.board.tiles_that_see(
+                        self.inspected_tile
+                    )
+                )
+
             self.current_view.draw(
                 self.world,
                 selected=self.selected,
                 legal_moves=legal_moves,
+                visible_tiles=visible_tiles,
+                inspected_tile=self.inspected_tile,
             )
 
             pygame.display.flip()

@@ -118,8 +118,16 @@ class BoardView:
                         7,
                     )
 
-    def draw(self, world, selected=False, legal_moves=None):
+    def draw(
+        self,
+        world,
+        selected=False,
+        legal_moves=None,
+        visible_tiles=None,
+        inspected_tile=None,
+    ):
         legal_moves = legal_moves or {}
+        visible_tiles = visible_tiles or set()
 
         self.display.fill("#dadfe5")
 
@@ -155,6 +163,30 @@ class BoardView:
 
             pygame.draw.rect(self.display, color, rect)
             pygame.draw.rect(self.display, "black", rect, 1)
+
+            if tile_id in visible_tiles:
+                overlay = pygame.Surface(
+                    rect.size,
+                    pygame.SRCALPHA,
+                )
+
+                overlay.fill((40, 130, 255, 85))
+                self.display.blit(overlay, rect.topleft)
+
+                pygame.draw.rect(
+                    self.display,
+                    "#2685ff",
+                    rect.inflate(-8, -8),
+                    3,
+                )
+
+            if tile_id == inspected_tile:
+                pygame.draw.rect(
+                    self.display,
+                    "#083b91",
+                    rect.inflate(-16, -16),
+                    4,
+                )
 
             if tile_id in legal_moves:
                 pygame.draw.rect(
