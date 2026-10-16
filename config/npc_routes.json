@@ -1,0 +1,26 @@
+{
+  "Professor": {
+    "routes": [
+      {
+        "id": "campus_kunsela_loop",
+        "loop": "L",
+        "tiles": [
+          "1", "5", "K16", "K17", "K18",
+          "K19", "K20", "8", "4", "3", "2"
+        ]
+      }
+    ]
+  },
+  "TA1": {
+    "routes": [
+      {
+        "id": "kunsela_room_patrol",
+        "loop": "R",
+        "tiles": [
+          "K9", "K10", "K11", "K18",
+          "K25", "K26", "K27"
+        ]
+      }
+    ]
+  }
+}
