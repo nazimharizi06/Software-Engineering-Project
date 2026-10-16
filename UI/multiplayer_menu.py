@@ -1,4 +1,5 @@
 
+from pathlib import Path
 import pygame
 
 
@@ -7,61 +8,124 @@ class MultiplayerMenu:
         # Use the same window and state manager as the homepage
         self.display = display
         self.gameStateManager = gameStateManager
-
         self.width, self.height = display.get_size()
 
-        # Set up fonts for the screen
-        self.title_font = pygame.font.Font(None, 75)
-        self.button_font = pygame.font.Font(None, 42)
+        # Find the background image inside the assets folder
+        project_folder = Path(__file__).resolve().parent.parent
+        image_path = project_folder / "assets" / "multiplayer_background.png"
 
-        # Back button position
-        self.back_button = pygame.Rect(40, 620, 180, 65)
+        # Load and resize the image to fit the game window
+        background = pygame.image.load(str(image_path)).convert()
+        self.background = pygame.transform.smoothscale(
+            background, (self.width, self.height)
+        )
 
-    # Handle clicks on the Back button
+        # Clickable areas over the buttons in the new artwork
+        # The original image is 1648 x 928
+        original_width = 1648
+        original_height = 928
+
+        button_positions = {
+            "create": (520, 340, 630, 195),
+            "join": (540, 545, 590, 165),
+            "back": (610, 735, 420, 105)
+        }
+
+        # Scale the button positions to match the game window
+        scale_x = self.width / original_width
+        scale_y = self.height / original_height
+
+        self.buttons = {}
+
+        for name, (x, y, width, height) in button_positions.items():
+            self.buttons[name] = pygame.Rect(
+                round(x * scale_x),
+                round(y * scale_y),
+                round(width * scale_x),
+                round(height * scale_y)
+            )
+
+        self.hovered_button = None
+        self.message = ""
+        self.message_font = pygame.font.Font(None, 30)
+
+    # Check mouse movement and button clicks
     def handle_event(self, event):
+        if event.type == pygame.MOUSEMOTION:
+            self.hovered_button = None
+
+            for name, rect in self.buttons.items():
+                if rect.collidepoint(event.pos):
+                    self.hovered_button = name
+                    break
+
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            if self.back_button.collidepoint(event.pos):
-                self.gameStateManager.set_state("main_menu")
+            for name, rect in self.buttons.items():
+                if rect.collidepoint(event.pos):
+                    self.button_clicked(name)
+                    break
 
         return True
 
-    # Draw the multiplayer screen
+    # Decide what happens when a button is clicked
+    def button_clicked(self, name):
+        if name == "create":
+            # We'll connect this to the party server next
+            self.message = "Create Party selected"
+            print(self.message)
+
+        elif name == "join":
+            # We'll add party code entry next
+            self.message = "Join Party selected"
+            print(self.message)
+
+        elif name == "back":
+            self.message = ""
+            self.gameStateManager.set_state("main_menu")
+
+    # Draw the multiplayer menu each frame
     def run(self):
-        self.display.fill((22, 29, 47))
+        self.display.blit(self.background, (0, 0))
 
-        title = self.title_font.render(
-            "MULTIPLAYER", True, (255, 195, 65)
+        # Highlight the button the mouse is hovering over
+        if self.hovered_button is not None:
+            rect = self.buttons[self.hovered_button]
+
+            highlight = pygame.Surface(rect.size, pygame.SRCALPHA)
+            highlight.fill((255, 210, 75, 30))
+            self.display.blit(highlight, rect.topleft)
+
+        # Display a message when Create or Join is clicked
+        if self.message:
+            label = self.message_font.render(
+                self.message, True, (255, 255, 255)
+            )
+
+            label_rect = label.get_rect(
+                center=(self.width // 2, self.height - 25)
+            )
+
+            pygame.draw.rect(
+                self.display,
+                (25, 30, 40),
+                label_rect.inflate(30, 16),
+                border_radius=8
+            )
+
+            self.display.blit(label, label_rect)
+
+        # Change the cursor when hovering over a button
+        mouse_pos = pygame.mouse.get_pos()
+
+        over_button = any(
+            rect.collidepoint(mouse_pos)
+            for rect in self.buttons.values()
         )
 
-        self.display.blit(
-            title,
-            title.get_rect(center=(self.width // 2, 170))
+        cursor = (
+            pygame.SYSTEM_CURSOR_HAND
+            if over_button
+            else pygame.SYSTEM_CURSOR_ARROW
         )
 
-        message = self.button_font.render(
-            "Create Party / Join Party - Coming Next",
-            True,
-            (245, 240, 225)
-        )
-
-        self.display.blit(
-            message,
-            message.get_rect(center=(self.width // 2, 350))
-        )
-
-        # Draw the Back button
-        pygame.draw.rect(
-            self.display,
-            (245, 195, 80),
-            self.back_button,
-            border_radius=8
-        )
-
-        back_text = self.button_font.render(
-            "BACK", True, (20, 25, 35)
-        )
-
-        self.display.blit(
-            back_text,
-            back_text.get_rect(center=self.back_button.center)
-        )
+        pygame.mouse.set_cursor(cursor)
