@@ -1,4 +1,4 @@
-
+import asyncio
 from pathlib import Path
 import pygame
 
@@ -70,14 +70,15 @@ class MultiplayerMenu:
     # Decide what happens when a button is clicked
     def button_clicked(self, name):
         if name == "create":
-            # We'll connect this to the party server next
-            self.message = "Create Party selected"
-            print(self.message)
+            #ask the server to create a new party
+            asyncio.create_task(self.client.create_party("Host"))
+            # Open the lobby when Create Party is clicked
+            self.gameStateManager.set_state("lobby")
+            
 
         elif name == "join":
-            # We'll add party code entry next
-            self.message = "Join Party selected"
-            print(self.message)
+            # Open the Join Party screen when Join Party is clicked
+            self.gameStateManager.set_state("join_party")
 
         elif name == "back":
             self.message = ""
