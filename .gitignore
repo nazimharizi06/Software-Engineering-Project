@@ -1,2 +1,11 @@
+<<<<<<< HEAD
 *.pyc
 __pycache__/
+=======
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs
+/CardsMain/.vs/CardsMain.slnx/FileContentIndex
+>>>>>>> origin/Deck
