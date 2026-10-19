@@ -8,7 +8,7 @@ import websockets
 class MultiplayerClient:
     def __init__(self):
         # WebSocket server running on this computer
-        self.server_url = "ws://127.0.0.1:8765"
+        self.server_url = "ws://192.168.0.197:8765"
         self.websocket = None
 
         # Information about the current party

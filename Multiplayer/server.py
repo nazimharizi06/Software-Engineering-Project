@@ -227,9 +227,9 @@ async def handle_player(websocket):
 
 # Run the server until stopped
 async def main():
-    async with serve(handle_player, "127.0.0.1", 8765):
+    async with serve(handle_player, "0.0.0.0", 8765):
         print("Campus Caper server running")
-        print("WebSocket address: ws://127.0.0.1:8765")
+        print("WebSocket address: ws://0.0.0.0:8765")
         await asyncio.Future()
 
 
