@@ -1,15 +1,8 @@
 from email.mime import message
 import os
 import pygame
-import asyncio
-import sys
 import maps
-from GameStateManager import GameStateManager
-from UI.main_menu import MainMenu
-from UI.multiplayer_menu import MultiplayerMenu
-from UI.lobby import Lobby
-from Multiplayer.client import MultiplayerClient
-from UI.join_party import JoinParty
+from world import World
 
 SCREENWIDTH, SCREENHEIGHT = 1280, 720
 FPS = 60
@@ -17,79 +10,113 @@ FPS = 60
 class Game:
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT), pygame.SCALED)
+
+        self.screen = pygame.display.set_mode(
+            (SCREENWIDTH, SCREENHEIGHT)
+        )
+
+        pygame.display.set_caption("Campus Movement Prototype")
+
         self.clock = pygame.time.Clock()
-        
-        self.gameStateManager = GameStateManager('main_menu')
-        self.multiplayerClient = MultiplayerClient()
-        self.start = maps.Start(self.screen, self.gameStateManager)
-        self.level = maps.Level(self.screen, self.gameStateManager) 
-        
-        self.mainMenu = MainMenu(self.screen, self.gameStateManager)
-        self.multiplayerMenu = MultiplayerMenu(self.screen, self.gameStateManager)
-        self.lobby = Lobby(self.screen, self.gameStateManager)
-        self.joinParty = JoinParty(self.screen, self.gameStateManager)
-        
-        self.states = {'start': self.start, 'level': self.level, 'main_menu': self.mainMenu, 'multiplayer_menu': self.multiplayerMenu, 'lobby': self.lobby, 'join_party': self.joinParty}
-        
-        # Give both screens access to the same connection
-        self.lobby.client = self.multiplayerClient
-        self.multiplayerMenu.client = self.multiplayerClient
+        self.world = World()
 
-        # Share the multiplayer connection with the Join Party screen
-        self.joinParty.client = self.multiplayerClient
+        self.states = {
+            "campus": maps.Campus(
+                self.screen,
+                self.world.boards["campus"],
+            ),
+            "kunsela": maps.Kunsela(
+                self.screen,
+                self.world.boards["kunsela"],
+            ),
+        }
 
-    async def run(self):
-        while True:
+        self.selected = False
+        self.selected_tile = None
+        self.inspected_tile = None
+
+    @property
+    def current_view(self):
+        stage_id = self.world.active_player.stage_id
+        return self.states[stage_id]
+
+    def handle_click(self, position):
+        player = self.world.active_player
+        view = self.current_view
+
+        if view.character_hit(self.world, player, position):
+            self.selected = not self.selected
+            self.inspected_tile = None
+            return
+
+        target_id = view.tile_at(position)
+
+        if target_id is None:
+            self.selected = False
+            self.inspected_tile = None
+            return
+
+        if self.selected:
+            legal_moves = self.world.legal_moves(player)
+
+            if target_id in legal_moves:
+                moved = self.world.move_player(
+                    self.world.active_player_index,
+                    target_id,
+                )
+
+                if moved:
+                    self.selected = False
+                    self.inspected_tile = None
+
+                return
+
+        self.selected = False
+
+        if self.inspected_tile == target_id:
+            self.inspected_tile = None
+        else:
+            self.inspected_tile = target_id
+
+    def run(self):
+        running = True
+
+        while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-                active_screen = self.states[self.gameStateManager.get_state()]
-                if hasattr(active_screen, 'handle_event'):
-                    if not active_screen.handle_event(event):
-                        pygame.quit()
-                        sys.exit()
-                    
-            self.states[self.gameStateManager.get_state()].run()
+                    running = False
 
-            # Apply messages received from the server
-            for message in self.multiplayerClient.process_messages():
-                event_type = message.get("type")
+                elif (
+                    event.type == pygame.MOUSEBUTTONDOWN
+                    and event.button == 1
+                ):
+                    self.handle_click(event.pos)
 
-                if event_type == "party_update":
-                    #update lobby information 
-                        self.lobby.update_lobby(
-                            message["code"],
-                            message["players"],
-                            self.multiplayerClient.is_host
-                        )
-                elif event_type == "party_joined":
-                    #open the lobby when the player successfully joins a party
-                    if self.gameStateManager.get_state() == "join_party":
-                        self.joinParty.waiting = False
-                        self.joinParty.message = "Joined the party"
-                        self.gameStateManager.set_state("lobby")
+            legal_moves = {}
 
-                elif event_type == "party_left":
-                    self.lobby.update_lobby("------", [], True)
-                    self.joinParty.waiting = False
-                    self.joinParty.message = "Left the party"
-                    #return to the multiplayer menu when the player leaves a party
-                    self.gameStateManager.set_state("multiplayer_menu")
+            if self.selected:
+                legal_moves = self.world.legal_moves(
+                    self.world.active_player
+                )
 
-                elif event_type == "error":
-                    #print the error from the server
-                    print("Multiplayer error:", message["message"])
+            visible_tiles = set()
 
-                    #show the error on the Join Party screen
-                    if self.gameStateManager.get_state() == "join_party":
-                        self.joinParty.message = message["message"]
-                        self.joinParty.waiting = False
-                       
-                elif event_type == "game_started":
-                    self.gameStateManager.set_state("level")
+            if self.inspected_tile is not None:
+                visible_tiles = (
+                    self.current_view.board.tiles_that_see(
+                        self.inspected_tile
+                    )
+                )
 
-            pygame.display.update()
+            self.current_view.draw(
+                self.world,
+                selected=self.selected,
+                legal_moves=legal_moves,
+                visible_tiles=visible_tiles,
+                inspected_tile=self.inspected_tile,
+            )
+
+            pygame.display.flip()
             self.clock.tick(FPS)
-            await asyncio.sleep(0)  # Allow other tasks to run
+
+        pygame.quit()
