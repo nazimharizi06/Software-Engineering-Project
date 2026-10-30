@@ -10,6 +10,13 @@ FPS = 60
 class Game:
     def __init__(self):
         pygame.init()
+        
+        ###
+        pygame.mixer.init()
+        pygame.mixer.music.load("audio/music/leberch-suspense-581371.mp3")
+        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.play(-1)
+        ###
 
         self.screen = pygame.display.set_mode(
             (SCREENWIDTH, SCREENHEIGHT)
@@ -119,4 +126,5 @@ class Game:
             pygame.display.flip()
             self.clock.tick(FPS)
 
+        pygame.mixer.music.stop()
         pygame.quit()
