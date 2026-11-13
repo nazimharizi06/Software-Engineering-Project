@@ -1,6 +1,5 @@
 
 import asyncio
-import sys
 import pygame
 import maps
 
@@ -14,7 +13,6 @@ from Multiplayer.client import MultiplayerClient
 
 SCREENWIDTH, SCREENHEIGHT = 1280, 720
 FPS = 60
-
 
 class Game:
     def __init__(self):
