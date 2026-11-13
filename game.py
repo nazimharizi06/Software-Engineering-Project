@@ -3,6 +3,7 @@ import os
 import pygame
 import maps
 from world import World
+from background_audio import BackgroundAudio
 
 SCREENWIDTH, SCREENHEIGHT = 1280, 720
 FPS = 60
@@ -11,12 +12,8 @@ class Game:
     def __init__(self):
         pygame.init()
         
-        ###
         pygame.mixer.init()
-        pygame.mixer.music.load("audio/music/leberch-suspense-581371.mp3")
-        pygame.mixer.music.set_volume(0.5)
-        pygame.mixer.music.play(-1)
-        ###
+        self.background_audio = BackgroundAudio()
 
         self.screen = pygame.display.set_mode(
             (SCREENWIDTH, SCREENHEIGHT)
@@ -98,6 +95,11 @@ class Game:
                     and event.button == 1
                 ):
                     self.handle_click(event.pos)
+
+            if running:
+                self.background_audio.play_for(
+                    self.world.active_player.stage_id
+                )
 
             legal_moves = {}
 
