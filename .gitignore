@@ -4,3 +4,6 @@ __pycache__/
 
 # Visual Studio
 .vs/
+
+# macOS
+.DS_Store
